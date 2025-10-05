@@ -19,23 +19,37 @@ export default function ProjectTrackerDashboard() {
 
     reader.onload = (event) => {
       try {
-        const workbook = XLSX.read(event.target.result, { type: 'binary' });
+        // Use ArrayBuffer for better mobile compatibility
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
         
-        console.log('Loaded projects:', data);
-        setProjects(data);
-        if (data.length > 0) {
-          setSelectedProject(data[0]);
+        console.log('Loaded projects:', jsonData);
+        console.log('Number of projects:', jsonData.length);
+        console.log('First project:', jsonData[0]);
+        
+        if (jsonData.length === 0) {
+          alert('No data found in the Excel file. Please check your file format.');
+          return;
         }
+        
+        setProjects(jsonData);
+        setSelectedProject(jsonData[0]);
       } catch (error) {
-        alert('Error reading file. Please ensure it is a valid Excel file.');
-        console.error(error);
+        alert('Error reading file: ' + error.message);
+        console.error('Upload error:', error);
       }
     };
 
-    reader.readAsBinaryString(file);
+    reader.onerror = (error) => {
+      alert('Error reading file. Please try again.');
+      console.error('FileReader error:', error);
+    };
+
+    // Use readAsArrayBuffer for better mobile support
+    reader.readAsArrayBuffer(file);
   };
 
   const handleProjectChange = (e) => {
@@ -265,13 +279,9 @@ export default function ProjectTrackerDashboard() {
                     value={selectedProject['Last Action date']}
                     isDate={true}
                   />
-
-                    {/* Next Action Date as per plan
- */}
-
                   <InfoCard 
                     label="Next Action (As Per Plan)" 
-                    value={selectedProject['Next Action Date as per plan'] || selectedProject['Next Action Date as per plan']}
+                    value={selectedProject['Next Action Date as per plan'] || selectedProject['Next action data as per plan']}
                     isDate={true}
                   />
                   <InfoCard 
